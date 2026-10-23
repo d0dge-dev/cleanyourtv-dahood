@@ -1,0 +1,1 @@
+Bisect build for issue 6 (service 1.5.13, launcher 1.4.13). Not a release; only this note differs from the tagged history.
