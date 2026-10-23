@@ -17,6 +17,12 @@ The checks:
 - run the Live TV pairing end to end: the code, a wrong code, saving the playlist, fetching and parsing it;
 - run the update logic of the manager against a mock of the GitHub API: the stable and test channels, equal versions with different
   commits, and going back to stable.
+- check that an update keeps the options chosen in the manager (Input key, Debloat, Live TV) and that only setup sets them;
+- scan the service for code that works on a newer Node but not on Node 8 (optional chaining, `fs.rmSync`, `mkdirSync({recursive})`,
+  `http.get(url, options)`, `crypto.randomInt`, and the `timeout` option on an asynchronous child process, which has to go through
+  `diag.execFile`);
+- scan the launcher, manager, picker and notification pages for syntax, APIs and CSS newer than Chromium 68, and check that the build adds
+  the flex-gap script.
 
 Nothing leaves your machine. The script also runs on current Node: `node tools/node8-check.js`.
 

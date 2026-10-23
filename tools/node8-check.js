@@ -350,6 +350,39 @@ const fake = (url, method) => { const res = { code: 0, out: '', writeHead(c) { t
   ninfo = napiMod.set({ page: true }); nconf.notifyApi.allow = ['10.0.0.0/24']; pg = await getPage('/t/' + ninfo.pageUrl.split('/t/')[1]); ok(pg.code === 403, 'the allow list applies to the page too');
   delete process.env.CYTV_NOTIFY_PAGE_MS; napiMod.set({ enabled: false });
 
+  // 16. An update (bootstrap.sh update) keeps the options the user chose; only setup passes values
+  const jt = path.join(root, 'scripts', 'jtool.js'), cfgFile = path.join(tmp, 'opt-config.json');
+  const jopt = (...a) => cp.spawnSync(process.execPath, [jt, 'options', cfgFile].concat(a), { encoding: 'utf8' });
+  fs.writeFileSync(cfgFile, JSON.stringify({ options: { inputKey: false, debloat: false, liveTv: false }, keep: 1 }));
+  let jr = jopt('', ''); let jc = JSON.parse(fs.readFileSync(cfgFile, 'utf8'));
+  ok(jr.status === 0 && jc.options.inputKey === false && jc.options.debloat === false && jc.options.liveTv === false && jc.keep === 1, 'an update with no values keeps Input key, Debloat and Live TV as they were');
+  jr = jopt('1', '1'); jc = JSON.parse(fs.readFileSync(cfgFile, 'utf8')); ok(jc.options.inputKey === true && jc.options.debloat === true, 'setup with values sets them');
+  fs.writeFileSync(cfgFile, '{}'); jopt('', ''); jc = JSON.parse(fs.readFileSync(cfgFile, 'utf8')); ok(jc.options.inputKey === true && jc.options.debloat === true, 'a first install without values defaults both to on');
+
+  // 17. Static rules for the service (Node 8): code that fails on webOS 5/6 but passes on a newer Node
+  const nbad = [];
+  const rules = [
+    [/\?\?|\?\.[A-Za-z_\[(]/, 'optional chaining or ??'], [/\bfs\.(rmSync|cpSync)\b|\bfs\.promises\b|\bfs\/promises\b/, 'fs API newer than Node 8'], [/mkdirSync\([^)]*recursive/, 'mkdirSync({recursive})'],
+    [/\b(cp|child_process)\.(execFile|exec|spawn)\([^\n]*\btimeout:/, 'the timeout option on an asynchronous child process (use diag.execFile)'],
+    [/\bhttps?\.get\(\s*[^,()]+,\s*\{/, 'http(s).get(url, options, cb) (use netcompat.get)'], [/\bcrypto\.randomInt\b/, 'crypto.randomInt (use netcompat.randomInt)'],
+    [/\.(flat|flatMap|matchAll|replaceAll|findLast)\(|\bObject\.fromEntries\b|\bPromise\.(allSettled|any)\b|\bglobalThis\b|\|\|=|&&=|\bstructuredClone\b/, 'API or operator newer than Node 8']];
+  for (const f of files) {
+    const base = path.basename(f); fs.readFileSync(f, 'utf8').split('\n').forEach((line, i) => {
+      const code = line.replace(/^\s*\/\/.*$/, ''); if (!code.trim()) return;
+      for (const [re, why] of rules) { if (re.test(code) && !(base === 'netcompat.js' && /randomInt|recursive/.test(code))) nbad.push(base + ':' + (i + 1) + ' ' + why); }
+    });
+  }
+  ok(!nbad.length, 'the service has no Node 8 incompatibilities' + (nbad.length ? ':\n  ' + nbad.join('\n  ') : ''));
+
+  // 18. Static rules for the pages: Chromium 68 (webOS 5). Newer syntax is a syntax error there and the page stays blank.
+  const pageFiles = ['app', 'manager/app', 'picker/app', 'notify/app'].map(d => path.join(root, d, 'index.html')).filter(f => fs.existsSync(f));
+  const pageRules = [[/\?\?|\?\.[A-Za-z_\[(]/, 'optional chaining or ??'], [/\|\|=|&&=/, 'logical assignment'], [/\.(flat|flatMap|matchAll|replaceAll|findLast)\(|\.at\(-?\d|\bObject\.fromEntries\b|\bPromise\.(allSettled|any)\b|\bglobalThis\b|\bstructuredClone\b|\bAbortSignal\.timeout\b/, 'API newer than Chromium 68'],
+    [/\baspect-ratio\s*:|:is\(|:where\(|:has\(|\binset\s*:|:focus-visible|\bcontainer-type|color-mix\(|\b\d+d?v?[sd]vh\b|@layer\b/, 'CSS newer than Chromium 68']];
+  const pbad = [];
+  for (const f of pageFiles) { const t = fs.readFileSync(f, 'utf8'); t.split('\n').forEach((line, i) => { for (const [re, why] of pageRules) if (re.test(line)) pbad.push(path.relative(root, f) + ':' + (i + 1) + ' ' + why); }); }
+  ok(!pbad.length, 'the pages use nothing newer than Chromium 68' + (pbad.length ? ':\n  ' + pbad.join('\n  ') : ''));
+  ok(/flexgap/.test(fs.readFileSync(path.join(root, 'ipk', 'build.py'), 'utf8')) && fs.existsSync(path.join(root, 'shared', 'flexgap.js')), 'the build adds the flex-gap script to every page');
+
   console.log(failed ? '\n' + failed + ' check(s) failed on Node ' + process.version : '\nall checks passed on Node ' + process.version);
   fs.rmSync ? fs.rmSync(tmp, { recursive: true, force: true }) : cp.spawnSync('rm', ['-rf', tmp]);
   process.exit(failed ? 1 : 0);
