@@ -1,7 +1,7 @@
 // Root service of CleanYourTV: bridges the launcher web app to luna, serves app icons, runs Live TV and picture
 // notifications, keeps the Input-key picker alive and hosts the manager API. Listens on 127.0.0.1 only.
 const http = require('http'), fs = require('fs'), path = require('path'), cp = require('child_process');
-const VERSION = '1.5.16';
+const VERSION = '1.5.1601';
 const PORT = 8765, DIR = '/media/developer/cleanyourtv', CONF = DIR + '/config.json', USAGE = DIR + '/usage.json';
 const ENV = Object.assign({}, process.env, { PATH: '/usr/bin:/usr/sbin:/bin:/sbin:' + (process.env.PATH || '') });
 
@@ -23,7 +23,7 @@ async function apps() {
   if (appCache && Date.now() - appCacheAt < 5000) return appCache;
   const r = await luna('luna://com.webos.applicationManager/listApps', {});
   appCache = (r.apps || []).filter(a => a.visible !== false && a.id !== 'com.webos.app.home')
-    .map(a => ({ id: a.id, title: a.title, icon: a.largeIcon || a.icon, folder: a.folderPath, type: a.type }));
+    .map(a => ({ id: a.id, title: a.title, icon: a.largeIcon || a.icon, folder: a.folderPath, type: a.type, color: /^#[0-9a-fA-F]{6}$/.test(a.iconColor || '') ? a.iconColor : '' }));
   appCacheAt = Date.now();
   return appCache;
 }
@@ -38,6 +38,14 @@ function usageScores() {
   for (const id in usage) out[id] = Math.round(decayed(usage[id], now) * 1000) / 1000;
   return out;
 }
+// When each app (or HDMI input) was last used, for launchers that sort by recency.
+function lastUsed() {
+  const out = {};
+  for (const id in usage) out[id] = usage[id].t;
+  return out;
+}
+// HDMI inputs are hidden apps, but a launcher can pin them, so they count as used too.
+const isInput = id => /^com\.webos\.app\.hdmi\d$/.test(id);
 let saveTimer = null;
 function bump(id) {
   const now = Date.now(), u = usage[id];
@@ -55,7 +63,7 @@ async function onForeground(id) {
   if (id === cand) streak++; else { cand = id; streak = 1; }
   if (streak >= 2 && id !== counted) {
     counted = id;
-    if ((await apps()).some(a => a.id === id)) bump(id);
+    if (isInput(id) || (await apps()).some(a => a.id === id)) bump(id);
   }
 }
 // Poll the foreground app every few seconds (a subscription's output is block-buffered by luna-send, so it would arrive late).
@@ -128,7 +136,7 @@ http.createServer(async (req, res) => {
     if (manager && u.startsWith('/api/manager/')) return manager.handle(req, res, u, body);
     if (u === '/api/frontend-ok' && req.method === 'POST') { const b = await body(req); if (manager) manager.frontendLoaded(String(b.version || '')); return json({ returnValue: true }); }
     if (u === '/api/version') return json({ version: VERSION });
-    if (u === '/api/apps') return json({ apps: await apps(), config: Object.assign((({ voice, notifyApi, theme: _t, ...rest }) => rest)(readConf()), theme ? { theme: theme.resolved() } : {}), usage: usageScores(), version: VERSION });
+    if (u === '/api/apps') return json({ apps: await apps(), config: Object.assign((({ voice, notifyApi, theme: _t, ...rest }) => rest)(readConf()), theme ? { theme: theme.resolved() } : {}), usage: usageScores(), lastUsed: lastUsed(), version: VERSION });
     if (u === '/api/inputs') return json(await luna('luna://com.webos.service.eim/getAllInputStatus', {}));
     if (u === '/api/foreground') return json(await luna('luna://com.webos.applicationManager/getForegroundAppInfo', {}));
     if (u === '/api/launch' && req.method === 'POST') {

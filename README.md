@@ -1,3 +1,5 @@
+> **dahood fork:** own launcher page and release channel on top of CleanYourTV. See [docs/dahood.md](docs/dahood.md).
+
 <p align="center"><img src="assets/icon.svg" width="128" alt="CleanYourTV icon"></p>
 
 # CleanYourTV for LG webOS

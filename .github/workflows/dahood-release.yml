@@ -1,0 +1,32 @@
+# dahood fork: a push to main that carries a new service version (const VERSION in helper/helper.js) builds the package and
+# publishes it as the latest release v<version>. TVs whose update source is this fork (/media/developer/cleanyourtv/source)
+# pick it up through the manager app's update. A push without a version bump builds and checks but publishes nothing.
+# Versions: upstream's x.y.z becomes x.y.(z*100+n), so ours always sort above the upstream release they are based on.
+name: dahood release
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["docs/**", "zensical.toml", "*.md"]
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Service checks under Node 8.12.0 (what webOS 5 and 6 ship)
+        run: sh tools/node8-check.sh
+      - name: Build the package
+        run: CYTV_BUILD="${GITHUB_SHA::7}" python3 ipk/build.py
+      - name: No secrets in the tree
+        run: |
+          # the fork is public: fail on anything that looks like a key, token or private address before it can ship
+          ! git grep -nIE '(api[_-]?key|token|secret|password)["'"'"' ]*[:=]["'"'"' ]*[A-Za-z0-9_\-]{20,}|-----BEGIN [A-Z ]*PRIVATE KEY|10\.0\.[0-9]+\.[0-9]+|dahood\.li/api/' -- ':!docs' ':!tools/node8-check.js' ':!.github'
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          v=$(sed -n "s/^const VERSION = '\(.*\)';/\1/p" helper/helper.js | head -1)
+          if gh release view "v$v" >/dev/null 2>&1; then echo "v$v already released; bump VERSION to publish"; exit 0; fi
+          git log -1 --format='%s%n%n%b' > notes.txt
+          gh release create "v$v" --target "$GITHUB_SHA" --title "v$v (dahood)" --notes-file notes.txt --latest dist/*
