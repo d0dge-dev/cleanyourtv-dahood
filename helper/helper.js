@@ -1,7 +1,7 @@
 // Root service of CleanYourTV: bridges the launcher web app to luna, serves app icons, runs Live TV and picture
 // notifications, keeps the Input-key picker alive and hosts the manager API. Listens on 127.0.0.1 only.
 const http = require('http'), fs = require('fs'), path = require('path'), cp = require('child_process');
-const VERSION = '1.5.1603';
+const VERSION = '1.5.1604';
 const PORT = 8765, DIR = '/media/developer/cleanyourtv', CONF = DIR + '/config.json', USAGE = DIR + '/usage.json';
 const ENV = Object.assign({}, process.env, { PATH: '/usr/bin:/usr/sbin:/bin:/sbin:' + (process.env.PATH || '') });
 
@@ -46,6 +46,37 @@ function lastUsed() {
 }
 // HDMI inputs are hidden apps, but a launcher can pin them, so they count as used too.
 const isInput = id => /^com\.webos\.app\.hdmi\d$/.test(id);
+// ---- dahood fork: the media library on the launcher. The page asks us; we call the media server with the device token from
+// config.json (dahoodMedia: {url, feed, token}), so the token never reaches the page and the server needs no CORS. The last good
+// answer is kept, so a server outage leaves the row as it was (marked stale) instead of empty.
+const nc = require('./netcompat');
+let mediaCache = null, mediaAt = 0, mediaBusy = null;
+function mediaFeed() {
+  const m = readConf().dahoodMedia || {};
+  if (!m.url || !m.token) return Promise.resolve({ configured: false });
+  if (mediaCache && Date.now() - mediaAt < 20000) return Promise.resolve(mediaCache);
+  if (mediaBusy) return mediaBusy;
+  mediaBusy = new Promise(resolve => {
+    let done = false, req = null;
+    const end = v => { if (done) return; done = true; mediaBusy = null; resolve(v); };
+    const fail = why => { console.error('media feed: ' + why); end(mediaCache ? Object.assign({}, mediaCache, { stale: true }) : { configured: true, error: why }); };
+    try {
+      const u = String(m.url).replace(/\/$/, '') + (m.feed || '/api/launcher/feed');
+      req = nc.get(/^https:/.test(u) ? require('https') : require('http'), u, { headers: { authorization: 'Bearer ' + m.token } }, res => {
+        let b = ''; res.setEncoding('utf8');
+        res.on('data', d => { b += d; if (b.length > 2000000) { req.abort(); fail('answer too big'); } });
+        res.on('aborted', () => fail('connection dropped'));   // a dropped connection ends here, not in 'error'
+        res.on('end', () => {
+          if (res.statusCode !== 200) return fail('http ' + res.statusCode);
+          try { const j = JSON.parse(b); j.configured = true; mediaCache = j; mediaAt = Date.now(); end(j); } catch (_) { fail('bad json'); }
+        });
+      });
+      req.setTimeout(10000, () => { req.abort(); fail('timeout'); });
+      req.on('error', e => fail(String(e.message || e)));
+    } catch (e) { fail(String(e.message || e)); }
+  });
+  return mediaBusy;
+}
 let saveTimer = null;
 function bump(id) {
   const now = Date.now(), u = usage[id];
@@ -136,7 +167,8 @@ http.createServer(async (req, res) => {
     if (manager && u.startsWith('/api/manager/')) return manager.handle(req, res, u, body);
     if (u === '/api/frontend-ok' && req.method === 'POST') { const b = await body(req); if (manager) manager.frontendLoaded(String(b.version || '')); return json({ returnValue: true }); }
     if (u === '/api/version') return json({ version: VERSION });
-    if (u === '/api/apps') return json({ apps: await apps(), config: Object.assign((({ voice, notifyApi, theme: _t, ...rest }) => rest)(readConf()), theme ? { theme: theme.resolved() } : {}), usage: usageScores(), lastUsed: lastUsed(), version: VERSION });
+    if (u === '/api/apps') return json({ apps: await apps(), config: Object.assign((({ voice, notifyApi, theme: _t, dahoodMedia: _dm, ...rest }) => rest)(readConf()), theme ? { theme: theme.resolved() } : {}), usage: usageScores(), lastUsed: lastUsed(), version: VERSION });
+    if (u === '/api/media/feed') return json(await mediaFeed());
     if (u === '/api/inputs') return json(await luna('luna://com.webos.service.eim/getAllInputStatus', {}));
     if (u === '/api/foreground') return json(await luna('luna://com.webos.applicationManager/getForegroundAppInfo', {}));
     if (u === '/api/launch' && req.method === 'POST') {

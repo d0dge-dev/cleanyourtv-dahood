@@ -54,15 +54,67 @@ html,body{width:1920px;height:1080px;overflow:hidden;background:var(--night);col
 .gt img{position:absolute;left:18%;top:18%;width:64%;height:64%}
 .gt .t{position:absolute;left:8px;right:8px;top:80px;text-align:center;font-size:22px;font-weight:600}
 .gl{position:absolute;width:196px;text-align:center;font-size:20px;color:#cfd3dc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* landing → library: the landing slides up, the library fades in over it */
+#land{left:0;top:0;width:1920px;height:1080px;transition:transform .35s,opacity .3s}
+body.lib #land{transform:translateY(-300px);opacity:0}
+#peek{left:0;top:740px;width:1920px;height:340px;overflow:hidden}
+#peek .bdp{position:absolute;left:0;top:0;width:1920px;height:340px;background-size:cover;background-position:center 35%;opacity:.35}
+#peek .fade{position:absolute;left:0;top:0;width:1920px;height:340px;background:linear-gradient(180deg,#0a0b0f 0%,rgba(10,11,15,.4) 45%,rgba(10,11,15,.7) 100%)}
+#peek .lab{position:absolute;left:100px;top:30px;font-size:30px;font-weight:600;color:#e8eaef}
+#peek .lab span{font-size:22px;color:#aab0bc;margin-left:14px}
+#lib{left:0;top:0;width:1920px;height:1080px;opacity:0;visibility:hidden;transition:opacity .35s}
+body.lib #lib{opacity:1;visibility:visible}
+.bd{position:absolute;left:0;top:0;width:1920px;height:1080px;background-size:cover;background-position:center 25%;opacity:0;transition:opacity .5s linear}
+.bd.on{opacity:1}
+.shade{position:absolute;left:0;top:0;width:1920px;height:1080px;
+  background:linear-gradient(90deg,rgba(10,11,15,.96) 0%,rgba(10,11,15,.72) 36%,rgba(10,11,15,.05) 72%),linear-gradient(0deg,rgba(10,11,15,1) 0%,rgba(10,11,15,.7) 32%,rgba(10,11,15,0) 58%)}
+#dock{left:96px;top:52px;opacity:.85;white-space:nowrap}
+#dock .pill{height:56px;line-height:56px;padding:0 20px;margin-right:14px}
+#dock .pill img{width:34px;height:34px;border-radius:8px;vertical-align:-9px;margin-right:12px}
+#dock .pill.in{background:linear-gradient(135deg,#1747b8,#2a6cf0);box-shadow:none}
+#libClock{right:96px;top:58px;font-size:40px;font-weight:500}
+#hero{left:96px;top:146px;width:820px}
+.kick{font-size:22px;color:var(--acc);font-weight:650;letter-spacing:.08em;text-transform:uppercase}
+#hLogo{max-width:440px;max-height:140px;margin:18px 0 20px;display:none}
+#hTitle{font-size:68px;font-weight:700;letter-spacing:-.02em;line-height:1.05;margin:16px 0 20px;max-height:144px;overflow:hidden}
+#hMeta{font-size:26px;color:#d6d9e0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#hProg{margin-top:16px;height:30px;white-space:nowrap}
+#hProg .bar{display:inline-block;vertical-align:middle;height:6px;width:360px;border-radius:3px;background:rgba(255,255,255,.25);margin-right:16px}
+#hProg .bar i{display:block;height:100%;border-radius:3px;background:var(--acc)}
+#hProg span{font-size:22px;color:#cfd3dc;vertical-align:middle}
+#hOver{font-size:23px;line-height:1.5;color:#c3c7d0;max-height:105px;overflow:hidden;margin-top:14px}
+#lrows{left:96px;top:0;width:1824px;transition:transform .3s}
+.lrow{position:absolute;left:0;width:1824px;transition:opacity .3s}
+.lrow.gone{opacity:0}
+.lrow .lab{font-size:28px;font-weight:600;color:#e8eaef}
+.strip{position:absolute;left:0;top:50px;transition:transform .25s}
+.card{position:absolute;top:0;border-radius:18px;overflow:hidden;background:#1a1d24;transition:transform .15s}
+.card img{width:100%;height:100%;object-fit:cover;display:block}
+.card .t{position:absolute;left:12px;right:12px;top:40%;text-align:center;font-size:22px;font-weight:600}
+.cap{position:absolute;left:0;right:0;bottom:0;padding:44px 20px 20px;background:linear-gradient(transparent,rgba(0,0,0,.85));font-size:24px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cap small{display:block;font-size:19px;font-weight:400;color:#c9ccd4;margin-top:4px}
+.prog{position:absolute;left:20px;right:20px;bottom:10px;height:5px;border-radius:3px;background:rgba(255,255,255,.25)}
+.prog i{display:block;height:100%;border-radius:3px;background:var(--acc)}
 #toast{position:absolute;left:50%;bottom:60px;width:900px;margin-left:-450px;text-align:center;font-size:26px;padding:18px;border-radius:18px;background:rgba(20,22,28,.95);opacity:0;transition:opacity .2s;z-index:20}
 #toast.on{opacity:1}
 </style></head>
 <body>
 <div class="glow" id="gA"></div><div class="glow" id="gB"></div>
-<div class="abs" id="clock"><span id="time"></span><span id="date"></span></div>
-<div class="abs" id="bar"></div>
-<div class="abs" id="name"></div>
-<div class="abs" id="row"></div>
+<div class="abs" id="land">
+  <div class="abs" id="clock"><span id="time"></span><span id="date"></span></div>
+  <div class="abs" id="bar"></div>
+  <div class="abs" id="name"></div>
+  <div class="abs" id="row"></div>
+  <div class="abs" id="peek"></div>
+</div>
+<div class="abs" id="lib">
+  <div class="bd" id="bdA"></div><div class="bd" id="bdB"></div>
+  <div class="shade"></div>
+  <div class="abs" id="dock"></div>
+  <div class="abs" id="libClock"></div>
+  <div class="abs" id="hero"><div class="kick" id="hKick"></div><img id="hLogo" alt=""><div id="hTitle"></div><div id="hMeta"></div><div id="hProg"></div><div id="hOver"></div></div>
+  <div class="abs" id="lrows"></div>
+</div>
 
 <div class="abs" id="all">
   <div class="bg"></div>
@@ -78,7 +130,7 @@ html,body{width:1920px;height:1080px;overflow:hidden;background:var(--night);col
 <div id="toast"></div>
 
 <script>
-var API='http://127.0.0.1:8765', VERSION='1.4.1503', CACHE_KEY='dahood.cache.v1';
+var API='http://127.0.0.1:8765', VERSION='1.4.1504', CACHE_KEY='dahood.cache.v1';
 function logm(m){try{fetch(API+'/api/log?m='+encodeURIComponent('dahood '+m))}catch(e){}}   /* ends up in /tmp/cleanyourtv-helper.log */
 window.onerror=function(msg,src,line){logm('error '+msg+' @'+line)};
 var PINS=['li.dahood.media','youtube.leanback.v4','com.webos.app.hdmi3'];          /* default; config.json "pins" overrides */
@@ -95,7 +147,7 @@ function $(id){return document.getElementById(id)}
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 function api(p,body){return fetch(API+p,body?{method:'POST',body:JSON.stringify(body)}:{}).then(function(x){return x.json()})}
 var toastT=0;function toast(s){var e=$('toast');e.textContent=s;e.classList.add('on');clearTimeout(toastT);toastT=setTimeout(function(){e.classList.remove('on')},4000)}
-function launch(id){api('/api/launch',{id:id}).then(function(x){if(x&&x.returnValue===false)toast('Could not open '+id)}).catch(function(){toast('Service not reachable')})}
+function launch(id,params){api('/api/launch',params?{id:id,params:params}:{id:id}).then(function(x){if(x&&x.returnValue===false)toast('Could not open '+id)}).catch(function(){toast('Service not reachable')})}
 var isInput=function(id){return /^com\.webos\.app\.hdmi\d$/.test(id)};
 
 /* ---------- state ---------- */
@@ -166,7 +218,7 @@ function glow(col){if(col===gColor)return;gColor=col;var on=gSide?$('gB'):$('gA'
 /* ---------- time ---------- */
 var H24=true;
 function hm(d){return d.toLocaleTimeString(LOC,{hour:'2-digit',minute:'2-digit',hour12:!H24})}
-function tick(){var d=new Date();$('time').textContent=hm(d);$('allClock').textContent=hm(d);
+function tick(){var d=new Date();$('time').textContent=hm(d);$('allClock').textContent=hm(d);$('libClock').textContent=hm(d);
   $('date').textContent=d.toLocaleDateString(LOC,{weekday:'long',day:'numeric',month:'long'})}
 
 
@@ -227,6 +279,78 @@ function aFocus(r,c){
   if(gr>=1){var bottom=414+gr*262+196+60;sh=Math.min(0,1080-40-bottom)}
   $('allScroll').style.transform=sh?'translateY('+sh+'px)':''}
 
+/* ---------- library (dahood media feed through the service: continue watching, next up, recently added) ---------- */
+var feed=null,lrowsData=[],libOpen=false,lr=0,lc=[],lEls=[],heroT=0,bdSide=0,bdUrl='';
+try{feed=JSON.parse(localStorage.getItem('dahood.feed.v1')||'null')}catch(e){}
+function sized(u,w,q){return u?u+(u.indexOf('?')<0?'?':'&')+'maxWidth='+w+'&quality='+(q||80):''}
+function dur(m){if(!m&&m!==0)return '';m=Math.round(m);return m>=60?Math.floor(m/60)+' h '+(m%60?m%60+' min':''):m+' min'}
+function leftText(it){return it.runtimeMin&&it.progress?dur(it.runtimeMin*(1-it.progress))+' left':''}
+function feedRows(f){
+  if(!f||!f.configured||f.error)return [];
+  return [{label:'Continue watching',items:f.resume||[],wide:true,play:true},{label:'Next up',items:f.nextUp||[],wide:true,play:true},
+    {label:'Recently added',items:f.latest||[],wide:false,play:false}].filter(function(x){return x.items.length})}
+function cardImg(it,wide){return wide?sized(it.kind==='Episode'?(it.thumb||it.backdrop||it.poster):(it.backdrop||it.thumb||it.poster),480,75):sized(it.poster||it.thumb,240,80)}
+function card(it,row,i){
+  var w=row.wide?420:180,h=row.wide?236:270,d=document.createElement('div');d.className='card';
+  d.style.left=(i*(w+30))+'px';d.style.width=w+'px';d.style.height=h+'px';d._it=it;
+  var u=cardImg(it,row.wide),title=it.seriesName||it.name;
+  if(u){var im=new Image();im.alt='';im.decoding='async';im.src=u;im.onerror=function(){im.remove();var t=document.createElement('div');t.className='t';t.textContent=title;d.insertBefore(t,d.firstChild)};d.appendChild(im)}
+  else{var t=document.createElement('div');t.className='t';t.textContent=title;d.appendChild(t)}
+  if(row.wide){var c=document.createElement('div');c.className='cap';c.innerHTML=esc(title)+'<small>'+esc([it.episodeLabel,leftText(it)||dur(it.runtimeMin)].filter(Boolean).join(' · '))+'</small>';d.appendChild(c)}
+  if(it.progress){var p=document.createElement('div');p.className='prog';p.innerHTML='<i style="width:'+Math.round(it.progress*100)+'%"></i>';d.appendChild(p)}
+  return d}
+function rowH(row){return 50+(row.wide?236:270)+52}
+function buildLib(){
+  lrowsData=feedRows(feed);var box=$('lrows');box.textContent='';lEls=[];lc=lrowsData.map(function(){return 0});
+  var y=0;lrowsData.forEach(function(row,ri){
+    var el=document.createElement('div');el.className='lrow';el.style.top=y+'px';el._y=y;
+    el.innerHTML='<div class="lab">'+esc(row.label)+'</div>';var st=document.createElement('div');st.className='strip';el.appendChild(st);
+    var cards=row.items.map(function(it,i){var c=card(it,row,i);st.appendChild(c);return c});
+    box.appendChild(el);lEls.push({el:el,strip:st,cards:cards});y+=rowH(row)});
+  buildPeek()}
+function buildPeek(){
+  var pk=$('peek');pk.textContent='';var row=lrowsData[0];if(!row)return;
+  var first=row.items[0];
+  pk.innerHTML='<div class="bdp"></div><div class="fade"></div><div class="lab">Movies &amp; series<span>▼</span></div>';
+  if(first&&first.backdrop)pk.firstChild.style.backgroundImage='url("'+sized(first.backdrop,1280,60)+'")';
+  row.items.slice(0,4).forEach(function(it,i){var c=card(it,{wide:true},i+1);c.style.left=(100+i*474)+'px';c.style.top='92px';c.style.width='448px';c.style.height='252px';pk.appendChild(c)})}
+function buildDock(){
+  var dk=$('dock');dk.textContent='';
+  pins().filter(function(id){return isInput(id)||!!byId[id]}).sort(function(a,b){return byRecent(a,b)||pins().indexOf(a)-pins().indexOf(b)}).forEach(function(id){
+    var p=document.createElement('span');p.className='pill'+(isInput(id)?' in':'');
+    if(isInput(id))p.innerHTML=svg('pad',2)+esc(pinName(id)||'HDMI '+id.slice(-1));
+    else{var i=new Image();i.src=API+'/icon/'+encodeURIComponent(id);p.appendChild(i);p.appendChild(document.createTextNode((byId[id]||{}).title||id))}
+    dk.appendChild(p)});
+  var g=document.createElement('span');g.className='pill';g.innerHTML=svg('grid',2).replace('<svg','<svg style="margin-right:0"');dk.appendChild(g)}
+function openLib(){if(!lrowsData.length)return;libOpen=true;document.body.classList.add('lib');buildDock();lFocus(0,lc[0]||0,true)}
+function closeLib(){libOpen=false;document.body.classList.remove('lib');var o=curCard();if(o)o.classList.remove('f');if(rows[1].length)setFocus(1,focusC)}
+function curCard(){var e=lEls[lr];return e&&e.cards[lc[lr]]}
+function lFocus(r,c,now){
+  var o=curCard();if(o)o.classList.remove('f');
+  lr=Math.max(0,Math.min(r,lEls.length-1));var e=lEls[lr];lc[lr]=Math.max(0,Math.min(c,e.cards.length-1));
+  var cd=e.cards[lc[lr]];cd.classList.add('f');
+  $('lrows').style.transform='translateY('+(640-e.el._y)+'px)';
+  lEls.forEach(function(x,i){x.el.classList.toggle('gone',i<lr)});
+  var w=lrowsData[lr].wide?450:210,first=Math.max(0,lc[lr]-1);e.strip.style.transform=first?'translateX('+(-first*w)+'px)':'';
+  clearTimeout(heroT);heroT=setTimeout(function(){hero(cd._it,lrowsData[lr])},now?0:160)}
+function hero(it,row){
+  $('hKick').textContent=row.label;
+  var t=$('hTitle'),lg=$('hLogo'),title=it.seriesName||it.name;t.textContent=title;t.style.display='block';lg.style.display='none';
+  if(it.logo){var u=sized(it.logo,600,90),pre=new Image();pre.onload=function(){if($('hTitle').textContent!==title)return;lg.src=u;lg.style.display='block';t.style.display='none'};pre.src=u}
+  var meta=it.kind==='Episode'?[it.episodeLabel,it.name]:[it.year,(it.genres||[]).slice(0,2).join(', '),dur(it.runtimeMin)];
+  $('hMeta').textContent=meta.filter(Boolean).join(' · ');
+  $('hProg').innerHTML=it.progress?'<span class="bar"><i style="width:'+Math.round(it.progress*100)+'%"></i></span><span>'+esc(leftText(it))+'</span>':'';
+  $('hOver').textContent=it.overview||'';
+  var b=sized(it.backdrop,1920,80);if(b&&b!==bdUrl){bdUrl=b;var im=new Image();im.onload=function(){if(bdUrl!==b)return;var on=bdSide?$('bdB'):$('bdA'),off=bdSide?$('bdA'):$('bdB');bdSide^=1;
+    on.style.backgroundImage='url("'+b+'")';on.classList.add('on');off.classList.remove('on')};im.src=b}}
+function openItem(it,row){var l=row.play?it.playLink:it.deepLink;if(l&&l.appId)launch(l.appId,l.params)}
+function loadFeed(){api('/api/media/feed').then(function(f){
+  if(!f||!f.configured)return;if(f.error&&feed)return;   /* keep what we had when the server is down */
+  var sig=JSON.stringify([f.resume,f.nextUp,f.latest].map(function(l){return (l||[]).map(function(x){return [x.id,x.progress]})}));
+  if(sig===JSON.stringify([feed&&feed.resume,feed&&feed.nextUp,feed&&feed.latest].map(function(l){return (l||[]).map(function(x){return [x.id,x.progress]})}))&&lEls.length)return;
+  feed=f;try{localStorage.setItem('dahood.feed.v1',JSON.stringify(f))}catch(e){}
+  if(!libOpen)buildLib()}).catch(function(){})}
+
 /* ---------- keys ---------- */
 var BACK=[461,27,8];
 document.addEventListener('keydown',function(e){
@@ -239,8 +363,17 @@ document.addEventListener('keydown',function(e){
     else if(k===13){var x=arows[ar][ac];if(x&&x._id){launch(x._id);setTimeout(closeAll,600)}}
     else return;
     e.preventDefault();return}
+  if(libOpen){
+    if(BACK.indexOf(k)>=0)closeLib();
+    else if(k===37)lFocus(lr,lc[lr]-1);else if(k===39)lFocus(lr,lc[lr]+1);
+    else if(k===38){if(lr>0)lFocus(lr-1,lc[lr-1]);else closeLib()}
+    else if(k===40&&lr<lEls.length-1)lFocus(lr+1,lc[lr+1]);
+    else if(k===13){var cd=curCard();if(cd)openItem(cd._it,lrowsData[lr])}
+    else return;
+    e.preventDefault();return}
   if(k===37)setFocus(focusR,focusC-1);else if(k===39)setFocus(focusR,focusC+1);
   else if(k===38&&focusR>0)setFocus(0,0);else if(k===40&&focusR===0)setFocus(1,0);
+  else if(k===40&&focusR===1)openLib();
   else if(k===13)activate(rows[focusR][focusC]);
   else return;
   e.preventDefault()});
@@ -257,7 +390,7 @@ function load(){
     var sig=JSON.stringify([apps,cfg.pins,cfg.pinNames,cfg.hidden,last,ins.map(function(d){return [d.appId,d.label,d.hdmiPlugIn]})]);
     tick();store();if(sig!==lastSig){lastSig=sig;if(!allOpen)build()}
   }).catch(function(){toast('Service not reachable, retrying...');setTimeout(load,3000)})}
-function home(){if(allOpen)closeAll();if(rows[1].length)setFocus(1,0);load()}
+function home(){if(allOpen)closeAll();if(libOpen)closeLib();if(rows[1].length)setFocus(1,0);load();loadFeed()}
 function params(){var p={};try{p=JSON.parse(webOSSystem.launchParams||'{}')}catch(e){}return p}
 /* Home relaunches us (keepAlive) on every Home press, sometimes twice, and launchParams can already be overwritten by the time
    the event runs. So both events only schedule one wake-up that reads the params once things settled. */
@@ -267,7 +400,9 @@ document.addEventListener('webOSRelaunch',function(){logm('relaunch '+JSON.strin
 document.addEventListener('visibilitychange',function(){if(!document.hidden)wake()});
 tick();setInterval(tick,10000);
 if(apps.length){byId={};apps.forEach(function(a){byId[a.id]=a});build()}
-load();setInterval(function(){if(!document.hidden&&!allOpen)load()},60000);
+if(feed)buildLib();
+load();loadFeed();setInterval(function(){if(!document.hidden&&!allOpen)load()},60000);
+setInterval(function(){if(!document.hidden&&!libOpen)loadFeed()},300000);
 if(params().inputs)setTimeout(function(){openAll(true)},600);
 api('/api/frontend-ok',{version:VERSION}).catch(function(){});
 </script>
