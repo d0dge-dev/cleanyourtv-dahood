@@ -20,8 +20,8 @@ html,body{width:1920px;height:1080px;overflow:hidden;background:var(--night);col
   font-size:26px;color:#e9ebf0;white-space:nowrap;transition:transform .15s}
 .pill svg{width:28px;height:28px;vertical-align:-6px;margin-right:12px}
 #bar{right:96px;top:60px}
-.f{outline:6px solid #fff;outline-offset:6px;transform:scale(1.03);box-shadow:0 18px 36px rgba(0,0,0,.45);z-index:2}
-.pill.f{outline-width:4px;outline-offset:4px}
+.f{transform:scale(1.03);box-shadow:0 0 0 5px #0a0b0f,0 0 0 11px #fff,0 18px 36px rgba(0,0,0,.45)!important;z-index:2}
+.pill.f{box-shadow:0 0 0 4px #0a0b0f,0 0 0 8px #fff!important}
 #row{left:100px;top:350px;height:290px;width:1720px}
 .tile{position:absolute;top:0;height:290px;border-radius:28px;overflow:hidden;transition:transform .15s;background:#1a1d25}
 .tile .ic{position:absolute;left:50%;top:50%;width:170px;height:170px;margin:-85px 0 0 -85px}
@@ -51,7 +51,7 @@ html,body{width:1920px;height:1080px;overflow:hidden;background:var(--night);col
 .inp.off{opacity:.5}
 .dot{width:12px;height:12px;border-radius:6px;background:#45d483;display:inline-block;margin-right:8px}
 .gt{position:absolute;width:196px;height:196px;border-radius:26px;overflow:hidden;background:#1a1d25;transition:transform .15s}
-.gt img{position:absolute;left:33px;top:33px;width:130px;height:130px}
+.gt img{position:absolute;left:18%;top:18%;width:64%;height:64%}
 .gt .t{position:absolute;left:8px;right:8px;top:80px;text-align:center;font-size:22px;font-weight:600}
 .gl{position:absolute;width:196px;text-align:center;font-size:20px;color:#cfd3dc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #toast{position:absolute;left:50%;bottom:60px;width:900px;margin-left:-450px;text-align:center;font-size:26px;padding:18px;border-radius:18px;background:rgba(20,22,28,.95);opacity:0;transition:opacity .2s;z-index:20}
@@ -62,7 +62,6 @@ html,body{width:1920px;height:1080px;overflow:hidden;background:var(--night);col
 <div class="abs" id="clock"><span id="time"></span><span id="date"></span></div>
 <div class="abs" id="bar"></div>
 <div class="abs" id="name"></div>
-<div class="abs" id="sub"></div>
 <div class="abs" id="row"></div>
 
 <div class="abs" id="all">
@@ -79,7 +78,7 @@ html,body{width:1920px;height:1080px;overflow:hidden;background:var(--night);col
 <div id="toast"></div>
 
 <script>
-var API='http://127.0.0.1:8765', VERSION='1.4.1501', CACHE_KEY='dahood.cache.v1';
+var API='http://127.0.0.1:8765', VERSION='1.4.1502', CACHE_KEY='dahood.cache.v1';
 function logm(m){try{fetch(API+'/api/log?m='+encodeURIComponent('dahood '+m))}catch(e){}}   /* ends up in /tmp/cleanyourtv-helper.log */
 window.onerror=function(msg,src,line){logm('error '+msg+' @'+line)};
 var PINS=['li.dahood.media','youtube.leanback.v4','com.webos.app.hdmi3'];          /* default; config.json "pins" overrides */
@@ -119,6 +118,46 @@ function glowOf(id){
   var a=byId[id];if(a&&a.color){var c=hex2rgb(a.color),mx=Math.max(c[0],c[1],c[2]),mn=Math.min(c[0],c[1],c[2]);if(mx-mn>50)return c.join(',')}
   return hsl(hashHue(id),.55,.45).join(',')}
 function light(h){if(!h)return false;var c=hex2rgb(h);return c[0]*.3+c[1]*.59+c[2]*.11>170}
+function rgb2hsl(R,G,B){R/=255;G/=255;B/=255;var mx=Math.max(R,G,B),mn=Math.min(R,G,B),l=(mx+mn)/2,h=0,s=0,d=mx-mn;
+  if(d){s=d/(1-Math.abs(2*l-1));h=mx===R?((G-B)/d+(G<B?6:0)):mx===G?(B-R)/d+2:(R-G)/d+4;h*=60}return [h,s,l]}
+/* What an icon looks like, from its alpha (upstream's analyse): 'full' (art to the edges), 'pad' (an opaque, roughly square picture
+   with a transparent margin, as many LG icons are) or 'logo' (transparent gaps inside). box = the visible picture as fractions,
+   edge = the picture's own border colour. */
+function analyse(img){
+  try{
+    var N=64,cv=document.createElement('canvas');cv.width=cv.height=N;var x=cv.getContext('2d');x.drawImage(img,0,0,N,N);
+    var d=x.getImageData(0,0,N,N).data,x0=N,y0=N,x1=-1,y1=-1,xx,yy;
+    for(yy=0;yy<N;yy++)for(xx=0;xx<N;xx++)if(d[(yy*N+xx)*4+3]>128){if(xx<x0)x0=xx;if(xx>x1)x1=xx;if(yy<y0)y0=yy;if(yy>y1)y1=yy}
+    if(x1<0)return {k:'logo'};
+    var bw=x1-x0+1,bh=y1-y0+1,solid=0;
+    for(yy=y0;yy<=y1;yy++)for(xx=x0;xx<=x1;xx++)if(d[(yy*N+xx)*4+3]>=230)solid++;
+    var margin=Math.max(x0,y0,N-1-x1,N-1-y1)/N,ratio=bw/bh;
+    var k=solid/(bw*bh)<.85||ratio<.8||ratio>1.25?'logo':margin<.03?'full':'pad';
+    if(k==='full'){   /* art to the edges: a flat border (YouTube's white) stays a normal icon on that colour; a picture fills the tile */
+      var sr=0,sg=0,sb=0,n0=0,q=0,ring=[],j;
+      for(yy=0;yy<N;yy++)for(xx=0;xx<N;xx++){if(yy&&yy<N-1&&xx&&xx<N-1)continue;j=(yy*N+xx)*4;if(d[j+3]>=230){ring.push(d[j],d[j+1],d[j+2]);sr+=d[j];sg+=d[j+1];sb+=d[j+2];n0++}}
+      if(n0){var mr=sr/n0,mg=sg/n0,mb=sb/n0;for(var t0=0;t0<ring.length;t0+=3)q+=Math.abs(ring[t0]-mr)+Math.abs(ring[t0+1]-mg)+Math.abs(ring[t0+2]-mb);
+        if(q/n0/3>14)return {k:'pad',box:[0,0,1,1],edge:[Math.round(mr),Math.round(mg),Math.round(mb)]};
+        return {k:'full',edge:[Math.round(mr),Math.round(mg),Math.round(mb)]}}}
+    var R=0,G=0,B=0,n=0,px=[];
+    for(yy=y0;yy<=y1;yy++)for(xx=x0;xx<=x1;xx++){if(yy-y0>1&&y1-yy>1&&xx-x0>1&&x1-xx>1)continue;var i=(yy*N+xx)*4;if(d[i+3]>=230){px.push(d[i],d[i+1],d[i+2]);R+=d[i];G+=d[i+1];B+=d[i+2];n++}}
+    var e=n?[Math.round(R/n),Math.round(G/n),Math.round(B/n)]:null,v=0;
+    if(e){for(var p=0;p<px.length;p+=3)v+=Math.abs(px[p]-e[0])+Math.abs(px[p+1]-e[1])+Math.abs(px[p+2]-e[2]);v=v/n/3}
+    return {k:k,box:[x0/N,y0/N,(x1+1)/N,(y1+1)/N],edge:e,flat:v<14}   /* flat: one border colour, not a gradient */
+  }catch(e){return null}}   /* null: the canvas could not be read */
+var looks={};try{looks=JSON.parse(localStorage.getItem('dahood.looks.v3')||'{}')}catch(e){}
+function rgbHex(c){return '#'+((1<<24)+(c[0]<<16)+(c[1]<<8)+c[2]).toString(16).slice(1)}
+/* Grid tile: a picture with its own square ('pad') or art to the edges ('full') fills the whole tile, cropped to its visible part,
+   so no frame of another colour shows; a transparent logo stays centred on the app's colour. */
+function fitIcon(t,i,id,lk){
+  i.removeAttribute('style');
+  if(lk&&lk.k==='full'&&lk.edge){t.style.background=rgbHex(lk.edge);return}   /* flat border: normal size, seamless on its own colour */
+  if(!lk||lk.k==='logo'||!lk.box){if(lk&&lk.edge&&!(byId[id]||{}).color)t.style.background=rgbHex(lk.edge);return}
+  var bx=lk.box,bw=bx[2]-bx[0],bh=bx[3]-bx[1],st=i.style;
+  st.width=(100/bw)+'%';st.height=(100/bh)+'%';st.left=(-bx[0]/bw*100)+'%';st.top=(-bx[1]/bh*100)+'%';
+  if(lk.edge)t.style.background=rgbHex(lk.edge)}
+/* Wide landing tile: the icon keeps its size, the tile takes the picture's own border colour so no square shows. */
+function fitPin(t,id,lk){if(lk&&lk.edge&&(lk.k==='full'||lk.flat))t.style.background=rgbHex(lk.edge)}
 function dark(h){if(!h)return true;var c=hex2rgb(h);return c[0]*.3+c[1]*.59+c[2]*.11<40}
 function tileBg(id,col){return dark(col)?'radial-gradient(120% 120% at 20% 10%,rgba('+glowOf(id)+',.45) 0%,#0f1622 60%,#0a0b0f 100%)':col}
 var gSide=0,gColor='';
@@ -129,17 +168,14 @@ var H24=true;
 function hm(d){return d.toLocaleTimeString(LOC,{hour:'2-digit',minute:'2-digit',hour12:!H24})}
 function tick(){var d=new Date();$('time').textContent=hm(d);$('allClock').textContent=hm(d);
   $('date').textContent=d.toLocaleDateString(LOC,{weekday:'long',day:'numeric',month:'long'})}
-function lastText(ts){
-  if(!ts)return 'Not used yet';
-  var d=new Date(ts),now=new Date(),day=86400000,t0=new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime();
-  if(ts>=t0)return 'Last used today, '+hm(d);
-  if(ts>=t0-day)return 'Last used yesterday, '+hm(d);
-  if(ts>=t0-6*day)return 'Last used '+d.toLocaleDateString(LOC,{weekday:'long'})+', '+hm(d);
-  return 'Last used '+d.toLocaleDateString(LOC,{day:'numeric',month:'long'})}
+
 
 /* ---------- landing ---------- */
 var focusR=1,focusC=0,rows=[[],[]],allOpen=false,ar=0,ac=0,arows=[];
-function img(id,cls){var i=new Image();i.className=cls||'';i.alt='';i.decoding='async';i.src=API+'/icon/'+encodeURIComponent(id);
+function img(id,cls,onLook){var i=new Image();i.className=cls||'';i.alt='';i.decoding='async';
+  if(onLook){if(looks[id])setTimeout(function(){onLook(i,looks[id])},0);else{i.crossOrigin='anonymous';
+    i.onload=function(){var lk=analyse(i);if(lk){looks[id]=lk;try{localStorage.setItem('dahood.looks.v3',JSON.stringify(looks))}catch(e){}}onLook(i,lk)}}}
+  i.src=API+'/icon/'+encodeURIComponent(id);
   i.onerror=function(){var p=i.parentNode;if(!p)return;i.remove();var t=document.createElement('div');t.className='t';t.textContent=(byId[id]||{}).title||id;
     if(light((byId[id]||{}).color))t.style.color='#16181d';p.appendChild(t)};return i}
 function pinTile(id,x){
@@ -147,7 +183,7 @@ function pinTile(id,x){
   if(isInput(id)){var inp=inputOf(id)||{},port=id.slice(-1);d.className+=' in';
     d.innerHTML=svg('pad',1.6)+'<div class="lbl">'+esc(pinName(id)||inp.label||'HDMI '+port)+'</div><div class="s2">'+esc((inp.label&&inp.label!=='HDMI '+port?inp.label+' · ':'')+'HDMI '+port)+'</div>';
     d._title=pinName(id)||inp.label||'HDMI '+port}
-  else{var a=byId[id]||{title:id};d.style.background=tileBg(id,a.color);d.appendChild(img(id,'ic'));d._title=a.title}
+  else{var a=byId[id]||{title:id};d.style.background=tileBg(id,a.color);d.appendChild(img(id,'ic',function(i,lk){fitPin(d,id,lk)}));d._title=a.title}
   return d}
 function build(){
   byId={};apps.forEach(function(a){byId[a.id]=a});
@@ -163,7 +199,6 @@ function setFocus(r,c){
   var o=rows[focusR]&&rows[focusR][focusC];if(o)o.classList.remove('f');
   focusR=r;focusC=Math.max(0,Math.min(c,rows[r].length-1));var e=rows[focusR][focusC];e.classList.add('f');
   $('name').textContent=e._title||'';
-  $('sub').textContent=e._all?(apps.length+' apps and '+inputs.length+' inputs'):e._id==='com.palm.app.settings'?'':lastText(last[e._id]);
   if(e._id)glow(glowOf(e._id))}
 function activate(e){if(e._all)openAll();else if(e._id)launch(e._id)}
 
@@ -179,7 +214,7 @@ function openAll(toInputs){
     ib.appendChild(e);return e});
   var list=apps.filter(function(a){return !hidden(a.id)}).sort(function(a,b){return byRecent(a.id,b.id)||(a.title<b.title?-1:1)});
   var g=list.map(function(a,i){var col=i%8,rw=Math.floor(i/8),x=col*218,y=rw*262;
-    var t=document.createElement('div');t.className='gt';t.style.left=x+'px';t.style.top=y+'px';t.style.background=tileBg(a.id,a.color);t._id=a.id;t.appendChild(img(a.id));gd.appendChild(t);
+    var t=document.createElement('div');t.className='gt';t.style.left=x+'px';t.style.top=y+'px';t.style.background=tileBg(a.id,a.color);t._id=a.id;t.appendChild(img(a.id,'',function(i,lk){fitIcon(t,i,a.id,lk)}));gd.appendChild(t);
     var l=document.createElement('div');l.className='gl';l.style.left=x+'px';l.style.top=(y+208)+'px';l.textContent=a.title;gd.appendChild(l);return t});
   arows=[ins];for(var i=0;i<g.length;i+=8)arows.push(g.slice(i,i+8));
   if(!ins.length)arows.shift();
