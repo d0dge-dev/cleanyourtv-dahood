@@ -78,7 +78,7 @@ html,body{width:1920px;height:1080px;overflow:hidden;background:var(--night);col
 <div id="toast"></div>
 
 <script>
-var API='http://127.0.0.1:8765', VERSION='1.4.1502', CACHE_KEY='dahood.cache.v1';
+var API='http://127.0.0.1:8765', VERSION='1.4.1503', CACHE_KEY='dahood.cache.v1';
 function logm(m){try{fetch(API+'/api/log?m='+encodeURIComponent('dahood '+m))}catch(e){}}   /* ends up in /tmp/cleanyourtv-helper.log */
 window.onerror=function(msg,src,line){logm('error '+msg+' @'+line)};
 var PINS=['li.dahood.media','youtube.leanback.v4','com.webos.app.hdmi3'];          /* default; config.json "pins" overrides */
@@ -251,6 +251,7 @@ var lastSig='';
 function load(){
   Promise.all([api('/api/apps'),api('/api/inputs').catch(function(){return {}})]).then(function(x){
     var a=x[0],ins=(x[1].devices||[]).filter(function(d){return d.appId});
+    if(!a.apps||!a.apps.length){setTimeout(load,2000);return}   /* right after a service restart the app list can come back empty: keep what we had */
     cfg=a.config||{};H24=cfg.clock!=='12';last=a.lastUsed||{};inputs=ins;
     apps=a.apps.map(function(p){return {id:p.id,title:p.title,color:p.color||''}});
     var sig=JSON.stringify([apps,cfg.pins,cfg.pinNames,cfg.hidden,last,ins.map(function(d){return [d.appId,d.label,d.hdmiPlugIn]})]);
